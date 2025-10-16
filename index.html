@@ -1134,16 +1134,17 @@ note bottom of EmailServer : "Notificaciones\nautomáticas"
             <button class="toggle-btn" onclick="toggleCode('deployment-code')">Ver/Ocultar Código PlantUML</button>
             <button class="toggle-btn copy-btn" onclick="copyCode('deployment-code')">📋 Copiar Código</button>
             <div id="deployment-code" class="code-container" style="display: none;">
-@startuml
+@startuml deployment
 !theme cerulean-outline
+
 skinparam backgroundColor #F8F9FA
 skinparam node {
     BackgroundColor #E3F2FD
     BorderColor #1976D2
-    FontSize 10
+    FontSize 12
 }
 
-' ==== Servidores principales ====
+' --- NODOS Y COMPONENTES ---
 node "🖥️ Servidor Web\n(Nginx)" as WebServer {
     artifact "🌐 Aplicación Web\n(React)" as WebApp
     artifact "📱 API REST\n(Node.js/Express)" as API
@@ -1169,70 +1170,60 @@ node "📧 Servidor Email\n(Postfix/SendGrid)" as EmailServer {
     artifact "📨 Templates Email" as EmailTemplates
 }
 
-' ==== Estaciones y dispositivos ====
 node "🖨️ Estación Bibliotecario\n(Windows PC)" as LibrarianStation {
     artifact "🖥️ Cliente Escritorio\n(Electron)" as DesktopClient
     artifact "🖨️ Driver Impresora\n(Zebra/Brother)" as PrinterDriver
 }
 
-node "📱 Dispositivos Móviles\n(Android/iOS)" as MobileStation {
+node "📱 Dispositivos Móviles\n(Android/iOS)" as MobileDevices {
     artifact "📱 App Móvil\n(Flutter)" as MobileApp
 }
 
-' ==== Internet ====
 cloud "🌐 Internet" as Internet
 
-' ==== Conexiones de red ====
+' --- CONEXIONES ---
 LibrarianStation ..> Internet : HTTPS/443
-MobileStation ..> Internet : HTTPS/443
+MobileDevices ..> Internet : HTTPS/443
 Internet ..> WebServer : Load Balancer
 
 WebServer --> AppServer : HTTP/8080
 AppServer --> DBServer : MySQL/3306
 AppServer --> CacheServer : Redis/6379
 AppServer --> EmailServer : SMTP/587
-
 WebServer --> CacheServer : Redis/6379
 
-' ==== Notas sobre puertos ====
-note right of WebServer
-    Puertos abiertos: 80/443 (HTTP/HTTPS)
+' --- NOTAS INFORMATIVAS ---
+note top of WebServer
+    Puerto 80/443 (HTTP/HTTPS)
+    Balanceador de carga con
+    múltiples instancias para
+    alta disponibilidad
 end note
 
-note right of AppServer
+note top of AppServer
     Puerto 8080 (HTTP)
+    Ejecuta servicios dentro de contenedores Docker
 end note
 
 note right of DBServer
     Puerto 3306 (MySQL)
+    Replicación maestro-esclavo
+    para backup y recuperación
 end note
 
 note bottom of CacheServer
     Puerto 6379 (Redis)
+    Mejora rendimiento de
+    consultas frecuentes
 end note
 
 note right of EmailServer
     Puerto 587 (SMTP)
-end note
-
-' ==== Notas adicionales ====
-note top of WebServer
-    Balanceador de carga con
-    múltiples instancias para
-    alta disponibilidad.
-end note
-
-note right of DBServer
-    Replicación maestro-esclavo
-    para backup y recuperación.
-end note
-
-note bottom of CacheServer
-    Mejora rendimiento de
-    consultas frecuentes.
+    Manejo de colas de correo y plantillas
 end note
 
 @enduml
+
 
             </div>
             <div class="diagram-container">
@@ -1348,32 +1339,41 @@ end note
 @startuml
 !theme cerulean-outline
 skinparam backgroundColor #F8F9FA
+skinparam componentStyle rectangle
 skinparam object {
     BackgroundColor #E8F5E8
     BorderColor #4CAF50
 }
+skinparam ArrowColor #2196F3
 
-object "👨‍💼 bibliotecario:Bibliotecario" as bib
-object "🖥️ ui:InterfazSistema" as ui  
-object "🔧 ctrl:ControladorPrestamo" as ctrl
-object "💾 prestamoRepo:PrestamoRepository" as repo
-object "💰 multa:ServicioMulta" as multa
-object "📧 notif:ServicioNotificacion" as notif
-object "📊 audit:ServicioAuditoria" as audit
+top to bottom direction
+skinparam nodesep 70
+skinparam ranksep 100
 
+' --- Objetos con estereotipos ---
+actor "Bibliotecario" as bib
+boundary "InterfazSistema" as ui
+control "ControladorPrestamo" as ctrl
+entity "PrestamoRepository" as repo
+entity "ServicioAuditoria" as audit
+control "ServicioMulta" as multa
+boundary "ServicioNotificacion" as notif
+
+' --- Mensajes ---
 bib -> ui : 1. escanearCodigoLibro()
 ui -> ctrl : 2. procesarDevolucion(isbn)
 ctrl -> repo : 3. buscarPrestamoPorISBN(isbn)
-repo -> ctrl : 4. prestamo
+repo --> ctrl : 4. prestamo
 ctrl -> multa : 5. calcularMulta(prestamo)
-multa -> ctrl : 6. montoMulta
+multa --> ctrl : 6. montoMulta
 ctrl -> repo : 7. actualizarEstadoPrestamo()
 ctrl -> notif : 8. enviarConfirmacion(usuario)
 ctrl -> audit : 9. registrarDevolucion()
 ctrl -> ui : 10. mostrarResumenDevolucion()
 ui -> bib : 11. imprimirComprobante()
 
-note top of ctrl
+' --- Notas ---
+note right of ctrl
     Orquesta todo el proceso
     de devolución
 end note
@@ -1383,12 +1383,13 @@ note right of multa
     política de la biblioteca
 end note
 
-note bottom of audit
+note right of audit
     Mantiene registro de
     todas las operaciones
 end note
 
 @enduml
+
             </div>
             <div class="diagram-container">
                 <div id="collaboration-diagram" class="loading">Cargando diagrama...</div>
@@ -1410,6 +1411,7 @@ skinparam package {
     BorderColor #4CAF50
     FontSize 12
 }
+left to right direction
 
 package "🖥️ com.biblioteca.presentacion" {
     package "web" {
@@ -3207,6 +3209,17 @@ pedido -> inventario : confirmar entrega
 
                     <div id="library-usecase-example" class="code-container" style="display: none;">
 @startuml CasoBiblioteca
+
+!theme cerulean-outline
+skinparam backgroundColor #F8F9FA
+skinparam node {
+    BackgroundColor #E3F2FD
+    BorderColor #1976D2
+    FontSize 10
+    FontColor #0D47A1
+}
+left to right direction
+
 actor Bibliotecario as bib
 actor Usuario as user
 actor "Sistema Multas" as multas
@@ -3252,6 +3265,14 @@ buscar <|-- "Búsqueda Avanzada"
 
                     <div id="library-domain-example" class="code-container" style="display: none;">
 @startuml ModeloBiblioteca
+!theme cerulean-outline
+skinparam backgroundColor #F8F9FA
+skinparam node {
+    BackgroundColor #E3F2FD
+    BorderColor #1976D2
+    FontSize 10
+    FontColor #0D47A1
+}
 class Usuario {
     -codigo: String
     -nombre: String
@@ -3334,6 +3355,15 @@ Prestamo "1" -- "0..1" Multa
 
                     <div id="library-sequence-example" class="code-container" style="display: none;">
 @startuml SecuenciaPrestar
+
+!theme cerulean-outline
+skinparam backgroundColor #F8F9FA
+skinparam node {
+    BackgroundColor #E3F2FD
+    BorderColor #1976D2
+    FontSize 10
+    FontColor #0D47A1
+}
 actor Bibliotecario as bib
 participant "Sistema" as sys
 participant "ControladorPrestamo" as ctrl
@@ -3383,6 +3413,14 @@ end
 
                     <div id="ecommerce-component-example" class="code-container" style="display: none;">
 @startuml ComponentesEcommerce
+!theme cerulean-outline
+skinparam backgroundColor #F8F9FA
+skinparam node {
+    BackgroundColor #E3F2FD
+    BorderColor #1976D2
+    FontSize 10
+    FontColor #0D47A1
+}
 package "Frontend" {
     component [Aplicación Web] as web
     component [Aplicación Móvil] as mobile
@@ -3605,6 +3643,12 @@ ConcreteObserver --> ConcreteSubject : subject
 
                     <div id="factory-pattern" class="code-container" style="display: none;">
 @startuml FactoryMethod
+!theme cerulean-outline
+interface Subject {
+    +attach(Observer): void
+    +detach(Observer): void
+    +notify(): void
+}
 abstract class DocumentFactory {
     +{abstract} createDocument(): Document
     +openDocument(): void
@@ -3664,6 +3708,12 @@ WordFactory ..> WordDocument : creates
 
                     <div id="composite-pattern" class="code-container" style="display: none;">
 @startuml Composite
+!theme cerulean-outline
+interface Subject {
+    +attach(Observer): void
+    +detach(Observer): void
+    +notify(): void
+}
 abstract class Component {
     #name: String
     +{abstract} operation(): void
@@ -3711,6 +3761,12 @@ Composite "1" *-- "0..*" Component : children
 
                     <div id="strategy-pattern" class="code-container" style="display: none;">
 @startuml Strategy
+!theme cerulean-outline
+interface Subject {
+    +attach(Observer): void
+    +detach(Observer): void
+    +notify(): void
+}
 class Context {
     -strategy: Strategy
     +setStrategy(Strategy): void
@@ -3754,7 +3810,7 @@ Strategy <|.. ConcreteStrategyC
                     <div class="example">
                         <h5>📋 Ejemplo: Estereotipos para Arquitectura Web</h5>
                         <button class="toggle-btn" onclick="toggleCode('stereotype-code')">Ver/Ocultar Código PlantUML</button>
-                        <button class="toggle-btn copy-btn" onclick="copyCode('stereotype-code')">📋 Copiar Código</button>
+                        <button class="toggle-btn copy-btn" onclick="copyCode('stereotype-code')">Copiar Código</button>
                         <div class="export-dropdown">
                             <button class="export-btn">📥 Exportar ▼</button>
                             <div class="dropdown-content">
@@ -3765,46 +3821,47 @@ Strategy <|.. ConcreteStrategyC
                         </div>
 
                         <div id="stereotype-code" class="code-container" style="display: none;">
-@startuml
+                            
+@startuml stereotypes
 !theme cerulean-outline
 skinparam backgroundColor #F8F9FA
 
 skinparam class {
-    BackgroundColor<<Controller>> #FFE0B2
-    BackgroundColor<<Service>> #E1F5FE 
-    BackgroundColor<<Repository>> #E8F5E8
-    BackgroundColor<<Entity>> #FFF3E0
-    BackgroundColor<<DTO>> #F3E5F5
+    BackgroundColor &lt;&lt;Controller&gt;&gt; #FFE0B2
+    BackgroundColor &lt;&lt;Service&gt;&gt; #E1F5FE
+    BackgroundColor &lt;&lt;Repository&gt;&gt; #E8F5E8
+    BackgroundColor &lt;&lt;Entity&gt;&gt; #FFF3E0
+    BackgroundColor &lt;&lt;DTO&gt;&gt; #F3E5F5
     BorderColor #424242
     FontSize 11
 }
 
 package "Arquitectura Web con Estereotipos" {
-    
-    class UserController <<Controller>> {
+
+    class UserController &lt;&lt;Controller&gt;&gt; {
         +getUserById(id: Long): ResponseEntity<UserDTO>
         +createUser(userDTO: UserDTO): ResponseEntity<UserDTO>
         +updateUser(id: Long, userDTO: UserDTO): ResponseEntity<UserDTO>
         +deleteUser(id: Long): ResponseEntity<Void>
     }
-    
-    class UserService <<Service>> {
+
+    class UserService &lt;&lt;Service&gt;&gt; {
         +findById(id: Long): User
         +createUser(userData: UserDTO): User
         +updateUser(id: Long, userData: UserDTO): User
         +deleteUser(id: Long): void
         +validateUserData(userData: UserDTO): boolean
     }
-    
-    class UserRepository <<Repository>> {
+
+    class UserRepository &lt;&lt;Repository&gt;&gt; {
         +findById(id: Long): Optional<User>
         +save(user: User): User
         +deleteById(id: Long): void
         +findByEmail(email: String): Optional<User>
         +findAllActiveUsers(): List<User>
     }
-    
-    class User <<Entity>> {
+
+    class User &lt;&lt;Entity&gt;&gt; {
         -id: Long
         -name: String
         -email: String
@@ -3813,8 +3870,8 @@ package "Arquitectura Web con Estereotipos" {
         +activate(): void
         +deactivate(): void
     }
-    
-    class UserDTO <<DTO>> {
+
+    class UserDTO &lt;&lt;DTO&gt;&gt; {
         +id: Long
         +name: String
         +email: String
@@ -3826,31 +3883,32 @@ package "Arquitectura Web con Estereotipos" {
 UserController --> UserService : uses
 UserService --> UserRepository : uses
 UserRepository --> User : manages
-UserController ..> UserDTO : <<uses>>
-UserService ..> UserDTO : <<uses>>
+UserController ..> UserDTO : &lt;&lt;uses&gt;&gt;
+UserService ..> UserDTO : &lt;&lt;uses&gt;&gt;
 
 note bottom of UserController
-    <<Controller>>
+    &lt;&lt;Controller&gt;&gt;
     Maneja peticiones HTTP
     Validación de entrada
     Transformación de datos
 end note
 
 note bottom of UserService
-    <<Service>>
+    &lt;&lt;Service&gt;&gt;
     Lógica de negocio
     Validaciones complejas
     Orquestación de operaciones
 end note
 
 note bottom of UserRepository
-    <<Repository>>
+    &lt;&lt;Repository&gt;&gt;
     Acceso a datos
     Abstracción de persistencia
     Consultas especializadas
 end note
 
 @enduml
+                            
                         </div>
                         <div id="stereotype-diagram">Cargando diagrama...</div>
                     </div>
@@ -4074,6 +4132,8 @@ skinparam interface {
     BorderColor #F57C00
 }
 
+left to right direction
+
 package "Infrastructure Layer" #LightGray {
     
     package "Driving Adapters" #LightBlue {
@@ -4261,8 +4321,8 @@ skinparam class {
 }
 
 package "Identity & Access Context" #LightBlue {
-    
-    class User <<Aggregate Root>> {
+
+    class User &lt;&lt;Aggregate Root&gt;&gt; {
         -id: UserId
         -credentials: Credentials
         -profile: UserProfile
@@ -4271,14 +4331,14 @@ package "Identity & Access Context" #LightBlue {
         +assignRole(role: Role): void
         +updateProfile(profile: UserProfile): void
     }
-    
-    class Credentials <<Value Object>> {
+
+    class Credentials &lt;&lt;Value Object&gt;&gt; {
         -username: String
         -passwordHash: String
         -lastLogin: LocalDateTime
     }
-    
-    class UserProfile <<Entity>> {
+
+    class UserProfile &lt;&lt;Entity&gt;&gt; {
         -firstName: String
         -lastName: String
         -email: Email
@@ -4287,8 +4347,8 @@ package "Identity & Access Context" #LightBlue {
 }
 
 package "Catalog Context" #LightGreen {
-    
-    class Product <<Aggregate Root>> {
+
+    class Product &lt;&lt;Aggregate Root&gt;&gt; {
         -id: ProductId
         -name: String
         -description: String
@@ -4299,15 +4359,15 @@ package "Catalog Context" #LightGreen {
         +changeCategory(category: Category): void
         +updateAvailability(quantity: int): void
     }
-    
-    class Category <<Entity>> {
+
+    class Category &lt;&lt;Entity&gt;&gt; {
         -id: CategoryId
         -name: String
         -parentCategory: Category
         -subcategories: List<Category>
     }
-    
-    class Money <<Value Object>> {
+
+    class Money &lt;&lt;Value Object&gt;&gt; {
         -amount: BigDecimal
         -currency: Currency
         +add(other: Money): Money
@@ -4316,8 +4376,8 @@ package "Catalog Context" #LightGreen {
 }
 
 package "Order Context" #LightYellow {
-    
-    class Order <<Aggregate Root>> {
+
+    class Order &lt;&lt;Aggregate Root&gt;&gt; {
         -id: OrderId
         -customerId: CustomerId
         -orderItems: List<OrderItem>
@@ -4330,8 +4390,8 @@ package "Order Context" #LightYellow {
         +cancel(): void
         +ship(): void
     }
-    
-    class OrderItem <<Entity>> {
+
+    class OrderItem &lt;&lt;Entity&gt;&gt; {
         -productId: ProductId
         -productName: String
         -quantity: int
@@ -4351,8 +4411,8 @@ package "Order Context" #LightYellow {
 }
 
 package "Payment Context" #LightCoral {
-    
-    class Payment <<Aggregate Root>> {
+
+    class Payment &lt;&lt;Aggregate Root&gt;&gt; {
         -id: PaymentId
         -orderId: OrderId
         -amount: Money
@@ -4363,10 +4423,10 @@ package "Payment Context" #LightCoral {
         +refund(amount: Money): void
         +verify(): boolean
     }
-    
-    class PaymentMethod <<Value Object>> {
+
+    class PaymentMethod &lt;&lt;Value Object&gt;&gt; {
         -type: PaymentType
-        -details: Map<String, String>
+        -details: Map&lt;String, String&gt;
     }
     
     enum PaymentStatus {
@@ -4379,8 +4439,8 @@ package "Payment Context" #LightCoral {
 }
 
 package "Shipping Context" #LightPink {
-    
-    class Shipment <<Aggregate Root>> {
+
+    class Shipment &lt;&lt;Aggregate Root&gt;&gt; {
         -id: ShipmentId
         -orderId: OrderId
         -trackingNumber: String
@@ -4391,8 +4451,8 @@ package "Shipping Context" #LightPink {
         +updateTracking(location: String): void
         +markAsDelivered(): void
     }
-    
-    class Carrier <<Entity>> {
+
+    class Carrier &lt;&lt;Entity&gt;&gt; {
         -id: CarrierId
         -name: String
         -trackingUrlTemplate: String
